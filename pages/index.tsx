@@ -7,6 +7,7 @@ import {
   splitFileDataByAPICallNumber
 } from "../utils/arrays";
 import { getDataTokensCount } from "../utils/tokens";
+import ModalOptions from "../components/modalOptions";
 
 export default function Home() {
   const [result, setResult] = useState<string>("");
@@ -27,6 +28,7 @@ export default function Home() {
     const totalTokensCount = await getDataTokensCount(allDataStringified, maxStringLength); // => Get the amount of tokens in the string to calculate how many OpenAPI calls needs to be made.
 
     if (totalTokensCount > maxTokenAllowedAtPrompt) {
+      // TODO: Open modalOptions and decide what to do according to user's choice
       const APICallCount = Math.ceil(totalTokensCount / maxTokenAllowedAtPrompt);
       const splittedDataByAPICall = splitFileDataByAPICallNumber(allData, APICallCount)
       const APIResults:string[] = [];
@@ -68,6 +70,7 @@ export default function Home() {
         setResult(data.result);
       }
     } else {
+      // Get summary
       if (allData.length > 0) {
         const GPT3Summary = await fetch("/api/generate", {
           method: "POST",
@@ -133,6 +136,7 @@ export default function Home() {
           { isLoading && <p>Analyzing data...</p> }
         </form>
         <div className={styles.result}>{result}</div>
+        <ModalOptions />
       </main>
     </div>
   );
