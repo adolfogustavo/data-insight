@@ -19,22 +19,20 @@ const style = {
   p: 4,
 };
 
-export default function ModalOptions() {
-  const [open, setOpen] = React.useState(false);
-  const [selectedValue, setSelectedValue] = React.useState('a');
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedValue(event.target.value);
-  };
-
+export default function ModalOptions({
+  selectedOption,
+  handleChange,
+  isModalOpen,
+  handleIsModalOpen,
+  handleSubmit,
+  totalTokens,
+}) {
   return (
     <div>
-      <Button onClick={handleOpen}>Open modal</Button>
+      <Button onClick={handleIsModalOpen}>Open modal</Button>
       <Modal
-        open={open}
-        onClose={handleClose}
+        open={isModalOpen}
+        onClose={handleIsModalOpen}
         aria-labelledby="modal-modal-title"
         aria-describedby="modal-modal-description"
       >
@@ -43,18 +41,16 @@ export default function ModalOptions() {
             Atention
           </Typography>
           <Typography id="modal-modal-description" sx={{ mt: 2, mb: 2 }}>
-            Your data contains more than ... tokens and the OpenAI only allows about 3000 tokens, please choose among this options:
+            Your data contains more than {totalTokens} tokens and the OpenAI only allows about 3000 tokens, please choose among this options:
           </Typography>
           <div>
             <FormControlLabel
-              value="b"
               control={
                 <Radio 
-                  checked={selectedValue === 'b'}
+                  checked={selectedOption === 'summary'}
                   onChange={handleChange}
-                  value="b"
+                  value="summary"
                   name="radio-buttons"
-                  inputProps={{ 'aria-label': 'B' }} 
                 />
               }
               label="Analyze briefly (Recommended)"
@@ -65,14 +61,12 @@ export default function ModalOptions() {
             </Tooltip>
             <br />
             <FormControlLabel
-              value="top"
               control={
                 <Radio 
-                  checked={selectedValue === 'a'}
+                  checked={selectedOption === 'all'}
                   onChange={handleChange}
-                  value="a"
+                  value="all"
                   name="radio-buttons"
-                  inputProps={{ 'aria-label': 'A' }}
                 />
               }
               label="Analyze all data (Expensive)"
@@ -83,8 +77,8 @@ export default function ModalOptions() {
             </Tooltip>
           </div>
           <div style={{ marginTop: '15px', marginBottom: '10px', textAlign: 'right' }}>
-            <Button variant="outlined" sx={{ mr: 1 }} onClick={handleOpen}>Cancel</Button>
-            <Button variant="contained" onClick={handleOpen}>Accept</Button>
+            <Button variant="outlined" sx={{ mr: 1 }} onClick={handleIsModalOpen}>Cancel</Button>
+            <Button variant="contained" onClick={handleSubmit}>Accept</Button>
           </div>
         </Box>
       </Modal>

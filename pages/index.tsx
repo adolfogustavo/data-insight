@@ -14,9 +14,29 @@ export default function Home() {
   const [file, setFile] = useState();
   const [fileName, setFileName] = useState();
   const [allData, setAllData] = useState<Array<any>>([]);
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
+  const [isModalOptionsOpen, setIsModalOptionsOpen] = useState<Boolean>(false);
+  const [selectedOption, setSelectedOption] = useState<String>('summary');
+  const [totalTokensCount, setTotalTokensCount] = useState<Number>(0);
 
   const inputFile = useRef<HTMLInputElement>(null);
+
+  const handleModalOptionSubmit = () => {
+    if(selectedOption === "summary") {
+      console.log("Add summary logic")
+    } else {
+      console.log("Add all logic")
+    }
+  }
+
+  const handleModalOpen = () => {
+    setIsModalOptionsOpen(!isModalOptionsOpen);
+  }
+
+  const handleModalOptionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("event.target.value=>", event.target.value);
+    setSelectedOption(event.target.value);
+  };
 
   async function onSubmit(event: any) {
     event.preventDefault();
@@ -24,67 +44,71 @@ export default function Home() {
     const allDataStringified = JSON.stringify({...allData}); // All the data stringified
     const maxStringLength = 10760; // Max number of characters per space, equals to 3078 tokens aprox
     const maxTokenAllowedAtPrompt = 3000; // Max number of tokens accepted by the OpenAPI
+    const tokensCount = await getDataTokensCount(allDataStringified, maxStringLength);
+    setTotalTokensCount(tokensCount); // => Get the amount of tokens in the string to calculate how many OpenAPI calls needs to be made.
 
-    const totalTokensCount = await getDataTokensCount(allDataStringified, maxStringLength); // => Get the amount of tokens in the string to calculate how many OpenAPI calls needs to be made.
+    console.log("tokensCount=>", tokensCount);
 
-    if (totalTokensCount > maxTokenAllowedAtPrompt) {
-      // TODO: Open modalOptions and decide what to do according to user's choice
-      const APICallCount = Math.ceil(totalTokensCount / maxTokenAllowedAtPrompt);
-      const splittedDataByAPICall = splitFileDataByAPICallNumber(allData, APICallCount)
-      const APIResults:string[] = [];
+    if (tokensCount > maxTokenAllowedAtPrompt) {
+      setIsModalOptionsOpen(true);
+      // TODO: Move this block of code to handleModalOptionsSubmit
+      // const APICallCount = Math.ceil(totalTokensCount / maxTokenAllowedAtPrompt);
+      // const splittedDataByAPICall = splitFileDataByAPICallNumber(allData, APICallCount)
+      // const APIResults:string[] = [];
 
-      // Calling the API per every splitted data
-      for (let j = 0; j < splittedDataByAPICall.length; j++) {
-        const dataToSend = JSON.stringify(splittedDataByAPICall[j]);
-        if (splittedDataByAPICall[j].length > 0) {
-          const GPT3APIResponse = await fetch("/api/generate", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              data: dataToSend,
-              summarize: false,
-            }),
-          });
-          const data = await GPT3APIResponse.json();
-          APIResults.push(data.result)
-        }
-      }
-      const allDataResponse = APIResults.join("\n"); // => Save temporarily all results from API calls.
+      // // Calling the API per every splitted data
+      // for (let j = 0; j < splittedDataByAPICall.length; j++) {
+      //   const dataToSend = JSON.stringify(splittedDataByAPICall[j]);
+      //   if (splittedDataByAPICall[j].length > 0) {
+      //     const GPT3APIResponse = await fetch("/api/generate", {
+      //       method: "POST",
+      //       headers: {
+      //         "Content-Type": "application/json",
+      //       },
+      //       body: JSON.stringify({
+      //         data: dataToSend,
+      //         summarize: false,
+      //       }),
+      //     });
+      //     const data = await GPT3APIResponse.json();
+      //     APIResults.push(data.result)
+      //   }
+      // }
+      // const allDataResponse = APIResults.join("\n"); // => Save temporarily all results from API calls.
 
-      // Summarize all the responses from previous calls.
-      if (allDataResponse.length > 0) {
-        const GPT3Summary = await fetch("/api/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            data: allDataResponse,
-            summarize: true,
-            maxTokens: 1000,
-          }),
-        });
-        const data = await GPT3Summary.json();
-        setResult(data.result);
-      }
+      // // Summarize all the responses from previous calls.
+      // if (allDataResponse.length > 0) {
+      //   const GPT3Summary = await fetch("/api/generate", {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //     },
+      //     body: JSON.stringify({
+      //       data: allDataResponse,
+      //       summarize: true,
+      //       maxTokens: 1000,
+      //     }),
+      //   });
+      //   const data = await GPT3Summary.json();
+      //   setResult(data.result);
+      // }
     } else {
-      // Get summary
-      if (allData.length > 0) {
-        const GPT3Summary = await fetch("/api/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            data: JSON.stringify(allData),
-            maxTokens: 500,
-          }),
-        });
-        const data = await GPT3Summary.json();
-        setResult(data.result);
-      }
+      // TODO: Move this block of code to handleModalOptionsSubmit
+      // Get summary with random data
+    //   if (allData.length > 0) {
+    //     const GPT3Summary = await fetch("/api/generate", {
+    //       method: "POST",
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //       },
+    //       body: JSON.stringify({
+    //         data: JSON.stringify(allData),
+    //         maxTokens: 500,
+    //       }),
+    //     });
+    //     const data = await GPT3Summary.json();
+    //     setResult(data.result);
+    //   }
     }
     setIsLoading(false);
   }
@@ -136,7 +160,14 @@ export default function Home() {
           { isLoading && <p>Analyzing data...</p> }
         </form>
         <div className={styles.result}>{result}</div>
-        <ModalOptions />
+        <ModalOptions
+          selectedOption={selectedOption}
+          handleChange={handleModalOptionChange}
+          isModalOpen={isModalOptionsOpen}
+          handleIsModalOpen={handleModalOpen}
+          handleSubmit={handleModalOptionSubmit}
+          totalTokens={totalTokensCount}
+        />
       </main>
     </div>
   );
